@@ -1,33 +1,42 @@
-# SFDLCS — UWB Signal Reconstruction
+# UWB Signal Reconstruction: SFDLCS with Deep Learning Enhancements
 
-PyTorch replication of **Select-First-Decide-Later Compressive Sensing (SFDLCS)** for UWB signal reconstruction.
+This project implements a high-precision reconstruction pipeline for Ultra-Wideband (UWB) soil echo signals using Compressive Sensing (CS) and Deep Learning. It transitions from traditional greedy algorithms to a data-driven "Select-First-Decide-Later" (SFDLCS) framework.
 
-> **Paper:** Luo et al., *"Deep Learning Based Compressive Sensing for UWB Signal Reconstruction"*, IEEE Transactions on Geoscience and Remote Sensing, 2022.
-> [https://doi.org/10.1109/TGRS.2022.3181891](https://doi.org/10.1109/TGRS.2022.3181891)
+## Project Structure
 
-## Overview
+The project is divided into two major phases:
 
-SFDLCS uses two networks to reconstruct sparse UWB signals from compressed measurements:
-- **Search Network (LSTM)** — learns correlation between nonzero index positions
-- **Decision Network** — learns the distribution of nonzero elements
+### Phase 1: Core SFDLCS Framework
+- **Sensing Model**: Compressed measurements $y = \Phi s$, where $s$ is the sparse signal.
+- **Search Network (LSTM)**: Replaces greedy selection with an LSTM to model sequential dependencies between residuals and sparse indices.
+- **Decision Network (FCNN)**: A verification stage that validates indices based on the learned distribution of non-zero elements in UWB signals.
+- **Baselines**: Comparative analysis against OMP, BCS, and GPSR.
 
-Together they form a "select first, decide later" structure that outperforms traditional CS algorithms.
+### Phase 2: Learned Enhancements
+- **Transformer Encoder**: Replaces the LSTM Search Network with self-attention mechanisms to capture global dependencies across reconstruction iterations.
+- **Adaptive Sensing ($\Phi$)**: Implements a learnable sensing matrix that adapts to the signal structure during training, significantly reducing NMSE.
+- **Differentiable Proxy**: Uses a neural decoder during training to enable gradient flow into the sensing matrix.
 
-## Results
+## Key Results
+- **Phase 1**: SFDLCS consistently outperformed OMP, especially at low sampling rates ($M \ll N$).
+- **Phase 2 (Transformer)**: Achieved a marginal (~1.2%) improvement in NMSE over LSTM.
+- **Phase 2 (Adaptive $\Phi$)**: Provided a major **6.14% NMSE reduction** by optimizing the compression step itself.
 
-| Algorithm | NMSE | CRR |
-|-----------|------|-----|
-| **SFDLCS** | **0.628** | **72.1%** |
-| GPSR | 0.821 | 69.5% |
-| BCS | 0.964 | 69.9% |
-| OMP | 1.556 | 64.3% |
+## Requirements
+- Python 3.x
+- PyTorch
+- NumPy
+- Matplotlib
 
-SFDLCS achieves **59.6% NMSE reduction vs OMP**, **34.8% vs BCS**, **23.5% vs GPSR**.
+## How to Run
+1. **Data Generation**: Generate synthetic UWB-like signals using the provided utilities.
+2. **Train Decision Network**: Train the FCNN to learn the signal's spatial non-zero distribution.
+3. **Train Search Network**:
+    - For Phase 1: Train the `SearchNetLSTM`.
+    - For Phase 2: Train the `SearchNetTransformer`.
+4. **Learn Sensing Matrix**: Use the `PhiLearner` and `Decoder` classes to optimize the sensing matrix $\Phi$.
+5. **Evaluate**: Run the SFDLCS reconstruction function and compare results with OMP/BCS/GPSR.
 
-
-
-## Notes
-
-- Uses synthetic UWB-like signals (Gaussian pulses) instead of real P440 sensor data
-- Signal length N=480, sparse zone [0, 80), K=15 pulses per signal
-- Trained at sample rate 40% (M=64 measurements)
+## Metrics
+- **NMSE**: Normalized Mean Square Error (Lower is better).
+- **CRR**: Correct Recovery Rate (Higher is better).
